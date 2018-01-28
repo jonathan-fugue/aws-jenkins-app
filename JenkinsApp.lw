@@ -26,7 +26,7 @@ cluster: AppCluster.new {
   name: "app",
   subnets: network.publicSubnets,
   size: 1,
-  keyName: "zFugueDebugKey",
+  keyName: "Demo",
   apps: [
     AppCluster.app {
       name: "jenkins",
