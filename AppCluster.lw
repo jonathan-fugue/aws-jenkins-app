@@ -85,12 +85,14 @@ fun new {
   region: Optional<Fugue.AWS.Region>,
   apps: List<App>,
   size: Optional<Int>,
+  instanceType: Optional<Fugue.AWS.EC2.InstanceType>,
   keyName: Optional<String>,
   tags: Optional<List<Fugue.AWS.Tag>>
 } -> AppCluster:
   let _vpc: vpc ?| List.index(subnets,0).(Fugue.AWS.EC2.Subnet).vpc
   let _region: region ?| _vpc.(Fugue.AWS.EC2.Vpc).region
   let _size: size ?| List.length(apps) + 1
+  let _instanceType: instanceType ?| Fugue.AWS.EC2.T2_large
   let _tags: tags ?| []
   let _random: Random.randomString{length: 8}
 
@@ -136,7 +138,7 @@ fun new {
   let lc: Fugue.AWS.AutoScaling.LaunchConfiguration.new {
     image: lookupEcsOptimizedImage(_region),
     securityGroups: [sg],
-    instanceType: Fugue.AWS.EC2.T2_large,
+    instanceType: _instanceType,
     keyName: keyName,
     iamInstanceProfile: Fugue.AWS.IAM.InstanceProfile.new {
       instanceProfileName: name ++ "-profile-" ++ _random,

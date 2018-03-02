@@ -3,6 +3,7 @@ composition
 import Fugue.AWS.Pattern.Network as Network
 import Fugue.AWS.IAM as IAM
 import Fugue.AWS.ECS as ECS
+import Fugue.AWS.EC2 as EC2
 import Fugue.AWS as AWS
 
 import AppCluster
@@ -27,6 +28,7 @@ cluster: AppCluster.new {
   subnets: network.publicSubnets,
   size: 1,
   keyName: "Demo",
+  instanceType: EC2.T2_large, 
   apps: [
     AppCluster.app {
       name: "jenkins",
