@@ -24,6 +24,7 @@ type App:
       image: String,
       port: Int,
       memory: Int,
+      environment: Optional<Dictionary<String>>,
       managedPolicies: List<Fugue.AWS.IAM.ManagedPolicy>,
       volumes: List<Fugue.AWS.ECS.Volume>,
       logGroupName: Optional<String>,
@@ -50,6 +51,7 @@ fun app {
   logGroupName: Optional<String>,
   port: Optional<Int>,
   memory: Optional<Int>,
+  environment: Optional<Dictionary<String>>,
   managedPolicies: Optional<List<Fugue.AWS.IAM.ManagedPolicy>>,
   volumes: Optional<List<Fugue.AWS.ECS.Volume>>
 } -> App:
@@ -58,6 +60,7 @@ fun app {
     image: image,
     port: port ?| 8000,
     memory: memory ?| 256,
+    environment: environment,
     logGroupName: logGroupName,
     managedPolicies: managedPolicies ?| [],
     volumes: volumes ?| []
@@ -104,6 +107,9 @@ fun new {
       [
         Fugue.AWS.EC2.IpPermission.http(
           Fugue.AWS.EC2.IpPermission.Target.all
+        ),
+        Fugue.AWS.EC2.IpPermission.ssh(
+          Fugue.AWS.EC2.IpPermission.Target.all
         )
       ],
       [
@@ -145,12 +151,20 @@ fun new {
       roles: [clusterInstanceRole]
     },
     userData: Template.render {
+      template:"#!/bin/bash
+      \
+      \yum update -y
+      \yum install -y ecs-init
+      \service docker start
+      \
+      \cat << EOF > /etc/ecs/ecs.config
+      \ECS_CLUSTER={{cluster}}
+      \ECS_ENABLE_TASK_IAM_ROLE=true
+      \EOF
+      \
+      \start ecs",
       data: {cluster: clusterName},
-      template:
-        '#!/bin/bash
-        \echo ECS_CLUSTER={{cluster}} >> /etc/ecs/ecs.config
-        \'
-    }
+    },
   }
 
   # Autoscaling group containing the actual instances in the cluster.
@@ -248,6 +262,7 @@ fun createServiceForApp {
     name: containerName,
     image: app.App.image,
     memory: app.App.memory,
+    environment: app.App.environment,
     portMappings: [
       Fugue.AWS.ECS.PortMapping.tcp {
         containerPort: app.App.port,
